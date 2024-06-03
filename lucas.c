@@ -43,7 +43,7 @@ void LucasPrintStackAt(lua_State *L, int idx) {
         case LUA_TTABLE:
             printf("(table):\n");
             lua_settop(L, idx);
-            LucasLucasPrintStackAt(L);
+            LucasDumpTable(L);
             break;
         default:;
             printf("(%s): %p\n", lua_typename(L, t), lua_topointer(L, idx));
@@ -51,7 +51,7 @@ void LucasPrintStackAt(lua_State *L, int idx) {
     }
 }
 
-int LucasLucasPrintStackAt(lua_State* L) {
+int LucasDumpTable(lua_State* L) {
     if (!lua_istable(L, -1))
         luaL_error(L, "Expected a table at the top of the stack");
     
@@ -63,7 +63,7 @@ int LucasLucasPrintStackAt(lua_State* L) {
             LucasPrintStackAt(L, -2);
         if (lua_type(L, -1) == LUA_TTABLE) {
             printf("\n");
-            LucasLucasPrintStackAt(L);
+            LucasDumpTable(L);
         } else {
             printf(" -- ");
             LucasPrintStackAt(L, -1);
@@ -156,7 +156,7 @@ static void PopulateLucasTable(lua_State *L, int idx, LucasTable **out) {
 
 LucasType* LucasGetType(lua_State *L, int idx) {
     assert(lua_gettop(L) >= idx);
-    LucasType *result = EZ_MALLOC(sizeof(LucasType));
+    LucasType *result = malloc(sizeof(LucasType));
     switch (result->type = lua_type(L, idx)) {
         case LUA_TNIL:
             result->data.userdata = NULL;

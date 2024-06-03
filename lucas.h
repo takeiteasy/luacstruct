@@ -35,7 +35,6 @@ extern "C" {
 #else
 #include "lucas_types.h"
 #endif
-#include "minilua.h"
 #include "luacstruct.h"
 
 #define LUA_TINTEGER 9

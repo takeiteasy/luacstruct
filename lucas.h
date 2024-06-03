@@ -38,6 +38,37 @@ extern "C" {
 #include "minilua.h"
 #include "luacstruct.h"
 
+#define LUA_TINTEGER 9
+#undef LUA_NUMTYPES
+#define LUA_NUMTYPES 10
+
+typedef struct LucasType LucasType;
+
+typedef struct LucasTable {
+    const char *key;
+    LucasType *value;
+    struct LucasTable *next;
+} LucasTable;
+
+struct LucasType {
+    union {
+        lua_Integer integer;
+        lua_Number number;
+        const char *string;
+        void *userdata;
+        LucasTable *table;
+    } data;
+    int type;
+};
+
+void LucasPushType(lua_State *L, LucasType *val);
+LucasType* LucasGetType(lua_State *L, int idx);
+void LucasFreeType(LucasType *val);
+
+void LucasPrintStackAt(lua_State *L, int idx);
+int LucasDumpTable(lua_State* L);
+int LucasDumpStack(lua_State* L);
+
 #ifdef __cplusplus
 }
 #endif

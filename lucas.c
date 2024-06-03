@@ -25,7 +25,7 @@
 #define LUA_IMPL
 #include "lucas.h"
 
-void PrintStackAt(lua_State *L, int idx) {
+void LucasPrintStackAt(lua_State *L, int idx) {
     int t = lua_type(L, idx);
     switch (t) {
         case LUA_TSTRING:
@@ -43,7 +43,7 @@ void PrintStackAt(lua_State *L, int idx) {
         case LUA_TTABLE:
             printf("(table):\n");
             lua_settop(L, idx);
-            LuaDumpTable(L);
+            LucasLucasPrintStackAt(L);
             break;
         default:;
             printf("(%s): %p\n", lua_typename(L, t), lua_topointer(L, idx));
@@ -51,7 +51,7 @@ void PrintStackAt(lua_State *L, int idx) {
     }
 }
 
-int LuaDumpTable(lua_State* L) {
+int LucasLucasPrintStackAt(lua_State* L) {
     if (!lua_istable(L, -1))
         luaL_error(L, "Expected a table at the top of the stack");
     
@@ -60,13 +60,13 @@ int LuaDumpTable(lua_State* L) {
         if (lua_type(L, -2) == LUA_TSTRING)
             printf("%s", lua_tostring(L, -2));
         else
-            PrintStackAt(L, -2);
+            LucasPrintStackAt(L, -2);
         if (lua_type(L, -1) == LUA_TTABLE) {
             printf("\n");
-            LuaDumpTable(L);
+            LucasLucasPrintStackAt(L);
         } else {
             printf(" -- ");
-            PrintStackAt(L, -1);
+            LucasPrintStackAt(L, -1);
             printf("\n");
         }
         lua_pop(L, 1);
@@ -79,7 +79,7 @@ int LuaDumpStack(lua_State* L) {
     int top = lua_gettop(L);
     for (int i = top; i; --i) {
         printf("%d%s: ", i, i == top ? " (top)" : "");
-        PrintStackAt(L, i);
+        LucasPrintStackAt(L, i);
         if (i > 1)
             printf("\n");
     }
@@ -87,7 +87,7 @@ int LuaDumpStack(lua_State* L) {
     return 0;
 }
 
-void PushLuaType(lua_State *L, LuaType *val) {
+void LucasPushType(lua_State *L, LucasType *val) {
     switch (val->type) {
         case LUA_TNIL:
             lua_pushnil(L);
@@ -106,10 +106,10 @@ void PushLuaType(lua_State *L, LuaType *val) {
             break;
         case LUA_TTABLE:
             lua_newtable(L);
-            LuaTable *cursor = val->data.table;
+            LucasTable *cursor = val->data.table;
             while (cursor) {
                 lua_pushstring(L, cursor->key);
-                PushLuaType(L, cursor->value);
+                LucasPushType(L, cursor->value);
                 lua_settable(L, -3);
                 cursor = cursor->next;
             }
@@ -129,10 +129,10 @@ void PushLuaType(lua_State *L, LuaType *val) {
     }
 }
 
-static void PopulateLuaTable(lua_State *L, int idx, LuaTable **out) {
-    LuaTable *head = malloc(sizeof(LuaTable));
-    memset(head, 0, sizeof(LuaTable));
-    LuaTable *cursor = NULL;
+static void PopulateLucasTable(lua_State *L, int idx, LucasTable **out) {
+    LucasTable *head = malloc(sizeof(LucasTable));
+    memset(head, 0, sizeof(LucasTable));
+    LucasTable *cursor = NULL;
     
     assert(lua_istable(L, idx));
     lua_pushnil(L);
@@ -140,23 +140,23 @@ static void PopulateLuaTable(lua_State *L, int idx, LuaTable **out) {
         if (!cursor)
             cursor = head;
         else {
-            LuaTable *new = malloc(sizeof(LuaTable));
-            memset(new, 0, sizeof(LuaTable));
+            LucasTable *new = malloc(sizeof(LucasTable));
+            memset(new, 0, sizeof(LucasTable));
             cursor->next = new;
             cursor = new;
         }
         
         cursor->key = luaL_checkstring(L, idx-1);
-        cursor->value = GetLuaType(L, idx);
+        cursor->value = LucasGetType(L, idx);
         lua_pop(L, 1);
     }
     
     *out = head;
 }
 
-LuaType* GetLuaType(lua_State *L, int idx) {
+LucasType* LucasGetType(lua_State *L, int idx) {
     assert(lua_gettop(L) >= idx);
-    LuaType *result = EZ_MALLOC(sizeof(LuaType));
+    LucasType *result = EZ_MALLOC(sizeof(LucasType));
     switch (result->type = lua_type(L, idx)) {
         case LUA_TNIL:
             result->data.userdata = NULL;
@@ -175,7 +175,7 @@ LuaType* GetLuaType(lua_State *L, int idx) {
             result->data.string = lua_tostring(L, idx);
             break;
         case LUA_TTABLE: {
-            PopulateLuaTable(L, idx, &result->data.table);
+            PopulateLucasTable(L, idx, &result->data.table);
             break;
         }
         case LUA_TFUNCTION:
@@ -194,7 +194,7 @@ LuaType* GetLuaType(lua_State *L, int idx) {
     return result;
 }
 
-void FreeLuaType(LuaType *val) {
+void LucasFreeType(LucasType *val) {
     if (val) {
         switch (val->type) {
             case LUA_TSTRING:
